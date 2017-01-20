@@ -39,6 +39,7 @@ router.use(function(req, res, next) {
             if(collection != undefined) {
                 constructSSE(res, collection);
             } 
+            
         }, 5000);
     
     }
@@ -103,17 +104,3 @@ router.use(function(req, res, next) {
 });
 
 module.exports = router;
-
-// open connection websocket.
-
-// send data from the client side.
-
-// receive data from the server side.
-
-// send data from the server side.
-
-// receive data from het client side.
-
-// close connection websocket on reload.
-
-// send to database part
