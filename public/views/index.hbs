@@ -1,0 +1,162 @@
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="../styles/index.css" type="text/css">
+</head>
+<body>
+    <main>
+        <div>
+            <button data-stop-stream>cancel stream</button>
+        </div>
+        <div class="container">
+            <div class="container__full-width">
+                <h2 data-art-title></h2>
+                <div data-art-image></div>
+                <div data-voting-counter></div>
+            </div>
+        </div>
+    </main>
+    <style>
+        .container{
+            width:100%;
+            display:flex;
+        }
+        .container__full-width{
+            width:100%;
+            display:flex;
+        }
+    </style>
+    <script>
+        const serverSentEvents = new EventSource('/');
+        const collectionContainer = document.querySelector('[data-collection]');
+        const artTitleContainer = document.querySelector('[data-art-title]');
+        const artImagecontainer = document.querySelector('[data-art-image]');
+        const textContainer = document.querySelector('[data-text-container]');
+        const stopStream = document.querySelector('[data-stop-stream]');
+        const websocket = new WebSocket('ws://localhost:8080');
+        const votingCounter = document.querySelector('[data-voting-counter]');
+        let artCollectionImageUrl = [];
+        let objectURL = '';
+        let imageUrl = ''; 
+        let artObject;
+        let imgEl;
+        let imgId;
+        let votes;
+
+        // server-sent-events (SSE) and xhr
+        // streaming images 
+        stopStream.addEventListener('click', function() {
+            serverSentEvents.close();    
+        });
+        
+        serverSentEvents.onmessage = function(e) {
+            artObject = JSON.parse(e.data);
+                    
+            if(artObject.url != undefined){
+                artCollectionImageUrl.push(artObject.url);
+                
+                Promise.all(artCollectionImageUrl).then(function(){
+                    return getImageFromUrl();
+                });
+            }   
+
+            if(artObject.title != undefined) {
+                let textEl = document.createElement('h3');
+                textEl.innerText = artObject.title;
+               
+                return combineWithText(textEl);
+            }
+
+            if(artObject.id != undefined){
+                let upVoteButton = document.createElement('button');
+               
+                upVoteButton.innerText = 'Up Vote';
+                upVoteButton.setAttribute('id', artObject.id);
+                var votes = 0;
+            
+                upVoteButton.addEventListener('click', function(e) {
+                    votes++;
+
+                    var artObjectScore = {
+                        'id': JSON.stringify(e.currentTarget.id),
+                        'votes': JSON.stringify(votes)
+                    }
+                    
+                    websocket.send(artObjectScore);
+                });
+
+                return combineWithText(upVoteButton);
+            }
+
+        };
+
+        function getImageFromUrl() {
+            
+            for(artUrl of artCollectionImageUrl){
+                // fetch each image
+                fetch(artUrl).then(function(response){    
+                    response.blob().then(function(imageBlob) {
+                        return blobToImage(imageBlob);
+                    });
+                }).then(function(){ 
+                    // garbage collection
+                    artCollectionImageUrl = [];
+                });
+            }
+        }
+
+        function blobToImage(imageBlob){
+            objectURL = URL.createObjectURL(imageBlob);
+            createImageElements(objectURL);
+        };
+
+        function createImageElements(objectURL){
+            imgContainer = document.createElement('div');
+            imgEl = document.createElement('img');
+            imgEl.setAttribute('src', objectURL);
+            imgEl.setAttribute('width', 300);
+            imgContainer.appendChild(imgEl);
+
+            combineWithText(imgContainer);   
+        }
+
+        function combineWithText(content){
+            artImagecontainer.appendChild(content);
+        }
+
+        // websockets (WS)
+        websocket.onopen = function(e) {
+            console.log(e);
+        };
+
+        websocket.onmessage = function(msg) {
+
+            votes = JSON.parse(msg.data);
+            
+            votingCounter.innerText = votes;
+        };
+
+        websocket.onerror = function(e) {
+            console.log(e);
+        };
+
+        websocket.onclose = function(code, reason) {
+            console.log(code, reason);
+            websocket.close();
+        };
+
+        // on refresh close stream connections
+        window.addEventListener('beforeunload', function() {
+            serverSentEvents.close();
+            websocket.close();
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if(e.keyCode == 13) {
+                websocket.send(textInputClient.value);
+            }
+        });
+    </script>
+</body>
+</html>
