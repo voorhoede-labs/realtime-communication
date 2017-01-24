@@ -80,11 +80,10 @@
                     votes++;
 
                     var artObjectScore = {
-                        'id': JSON.stringify(e.currentTarget.id),
+                        'id': e.currentTarget.id,
                         'votes': JSON.stringify(votes)
                     }
-                    
-                    websocket.send(artObjectScore);
+                    return websocket.send(JSON.stringify(artObjectScore));
                 });
 
                 return combineWithText(upVoteButton);
@@ -132,10 +131,8 @@
         };
 
         websocket.onmessage = function(msg) {
-
             votes = JSON.parse(msg.data);
-            
-            votingCounter.innerText = votes;
+            votingCounter.innerText = votes.votes;
         };
 
         websocket.onerror = function(e) {

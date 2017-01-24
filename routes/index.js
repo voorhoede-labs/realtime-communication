@@ -5,6 +5,7 @@ var WSS = require('ws').Server;
 var wss = new WSS({ port: 8080 });
 var request = require('request');
 
+var artObjectsList = [];
 var addHour;
 var date;
 var dateAddHour;
@@ -67,20 +68,17 @@ router.use(function(req, res, next) {
     function startWebsocket() {
         wss.on('connection', function(socket) {
             console.log('connection open');
-
-            // var json = __dirname + '/../messages.json';
-
-            // fs.readFile(json, function(err, data){
-            //     socket.send(data);
-            // });
+            // here should come code to fetch stored data
 
             socket.on('message', function(message) {
-                console.log(JSON.stringify(message.id));
-                console.log(JSON.stringify(message.votes));
-                // var artObject = [
-                //     {'id':JSON.stringify(message.id)},
-                //     {'votes': JSON.stringify(message.votes)}
-                // ];            
+                var artObject = JSON.parse(message);
+                //here should come the code to store message values
+                
+                // artObjectsList.push(artObject);
+
+                // fs.writeFile(json, artObjectsList, function(err, data) {
+                //     console.log(err, data);
+                // }); 
                 
                 // var addMessage = JSON.stringify({'data': message});
                 
@@ -88,7 +86,7 @@ router.use(function(req, res, next) {
                 //     console.log(err, data);
                 // });
 
-                // socket.send(addMessage);
+                socket.send(message);
             });
 
             socket.on('close', function (code, reason) {
